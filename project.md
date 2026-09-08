@@ -10,6 +10,49 @@ REST URL Mapper demonstration: CRUD resources, file transfer, idempotency, FullS
 - REST API: `http://localhost:18080/convertigo/api/v1`
 - OpenAPI: `http://localhost:18080/convertigo/openapi?__project=UrlMapperDemo&JSON`
 
+## Provision a FullSync API key
+
+Only the SHA-256 fingerprint is persisted in FullSync. Keep the raw API key only in the client secret store and send it with `X-API-Key` or `api_key`.
+
+1. Generate a raw key locally:
+
+```sh
+openssl rand -hex 32
+```
+
+2. Calculate its SHA-256 fingerprint locally:
+
+```sh
+printf '%s' 'paste-the-generated-raw-key-here' | shasum -a 256
+```
+
+3. In Convertigo Studio, run `UrlMapperDemo.api_keys_store.initialize_api_keys_database` only on a new or disposable demo database. This transaction resets the API key database.
+
+4. In the Studio Test Platform, run the private `UrlMapperDemo.api_keys_store.create_api_key` transaction with the following values:
+
+| Field | Value |
+| --- | --- |
+| `keyHash` | The SHA-256 output from step 2 |
+| `clientId` | A stable client identifier, for example `demo-client` |
+| `scopes` | Space-separated permissions, for example `resources:read resources:write files:read files:write` |
+| `active` | `true` |
+| `expiresAt` | A future ISO-8601 timestamp |
+| `createdAt` | The current ISO-8601 timestamp |
+
+5. Give the raw key to the API client once. It is never stored in FullSync and cannot be recovered from `keyHash`.
+
+## Idempotency status
+
+> Current state: `Idempotency-Key` is documented and mapped for resource creation and file upload, but persistent idempotency is not implemented yet. A repeated request can therefore still execute the business operation again.
+
+The target implementation belongs in `api_create_resource` and `api_upload_file`, not in `auth_guard`:
+
+1. Compute a request fingerprint from the method, path, payload, and file digest when applicable.
+2. Atomically create a FullSync idempotency document keyed by `Idempotency-Key`.
+3. Replay the stored response when the key and fingerprint match.
+4. Return `409 Conflict` when the same key is reused with a different fingerprint.
+5. Store the final status and response with an expiration policy.
+
 ## cURL examples
 
 ### OpenAPI document
@@ -38,10 +81,10 @@ curl --fail --user 'openapi-basic-test:demo-password' 'http://localhost:18080/co
 
 ### Bearer authentication
 
-> The JWT below is a real short-lived demonstration token. It expires one hour after this documentation update; issue a new token with `lib_JWT.jwt_sign` when it expires.
+> The JWT below is a real ten-year demonstration token. It is for local demonstration only; do not reuse it in production.
 
 ```sh
-curl --fail --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1cmxtYXBwZXItcHJvamVjdC1kb2N1bWVudGF0aW9uIiwic2NvcGUiOiJyZXNvdXJjZXM6cmVhZCIsImlhdCI6MTc4ODg4NjI0OCwiZXhwIjoxNzg4ODg5ODQ4fQ.bTAF-z3hgJPa_Op2wpNxbcYCGtGZYygSxZ90iDE174o' 'http://localhost:18080/convertigo/api/v1/resources?toto=test'
+curl --fail --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1cmxtYXBwZXItZGVtby0xMHkiLCJzY29wZSI6InJlc291cmNlczpyZWFkIHJlc291cmNlczp3cml0ZSBmaWxlczpyZWFkIGZpbGVzOndyaXRlIiwiaWF0IjoxNzg4ODg2NjY1LCJleHAiOjIxMDQ0NjI2NjV9.rjFAzSgL11nShkjuFBeWCL_nnzQMsIJG3WJoDlVyo7k' 'http://localhost:18080/convertigo/api/v1/resources?toto=test'
 ```
 
 ### Resource path parameter
@@ -49,6 +92,7 @@ curl --fail --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
 ```sh
 curl --fail --header 'X-API-Key: c8o-demo-key-change-me' 'http://localhost:18080/convertigo/api/v1/resources/2'
 ```
+
 
 <details><summary><span style="color:DarkGoldenRod"><i>References</i></span></summary><blockquote><p>
 

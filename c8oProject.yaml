@@ -41,6 +41,18 @@
     
     5. Give the raw key to the API client once. It is never stored in FullSync and cannot be recovered from `keyHash`.
     
+    ## Idempotency status
+    
+    > Current state: `Idempotency-Key` is documented and mapped for resource creation and file upload, but persistent idempotency is not implemented yet. A repeated request can therefore still execute the business operation again.
+    
+    The target implementation belongs in `api_create_resource` and `api_upload_file`, not in `auth_guard`:
+    
+    1. Compute a request fingerprint from the method, path, payload, and file digest when applicable.
+    2. Atomically create a FullSync idempotency document keyed by `Idempotency-Key`.
+    3. Replay the stored response when the key and fingerprint match.
+    4. Return `409 Conflict` when the same key is reused with a different fingerprint.
+    5. Store the final status and response with an expiration policy.
+    
     ## cURL examples
     
     ### OpenAPI document
@@ -79,11 +91,12 @@
     
     ```sh
     curl --fail --header ''X-API-Key: c8o-demo-key-change-me'' ''http://localhost:18080/convertigo/api/v1/resources/2''
-    ```'
+    ```
+    '
   contextTimeout: 59
   corsOrigin: =Origin
   httpSessionTimeout: 60
-  version: 8.4.0
+  version: 8.4.1
   ↓api_keys_store [connectors.FullSyncConnector]: 🗏 connectors/api_keys_store.yaml
   ↓UrlMapperDemodb [connectors.SqlConnector]: 🗏 connectors/UrlMapperDemodb.yaml
   ↓api_count_resources [sequences.GenericSequence]: 🗏 sequences/api_count_resources.yaml
