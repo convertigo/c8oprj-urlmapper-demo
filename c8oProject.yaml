@@ -1,0 +1,105 @@
+↑convertigo: 8.0.0.m006
+↓UrlMapperDemo [core.Project]: 
+  comment: |
+    '# UrlMapperDemo
+    
+    REST URL Mapper demonstration: CRUD resources, file transfer, idempotency, FullSync API keys, BASIC and Bearer JWT authentication, and Swagger/OpenAPI documentation.
+    
+    ## URLs
+    
+    - REST API: `http://localhost:18080/convertigo/api/v1`
+    - OpenAPI: `http://localhost:18080/convertigo/openapi?__project=UrlMapperDemo&JSON`
+    
+    ## Provision a FullSync API key
+    
+    Only the SHA-256 fingerprint is persisted in FullSync. Keep the raw API key only in the client secret store and send it with `X-API-Key` or `api_key`.
+    
+    1. Generate a raw key locally:
+    
+    ```sh
+    openssl rand -hex 32
+    ```
+    
+    2. Calculate its SHA-256 fingerprint locally:
+    
+    ```sh
+    printf ''%s'' ''paste-the-generated-raw-key-here'' | shasum -a 256
+    ```
+    
+    3. In Convertigo Studio, run `UrlMapperDemo.api_keys_store.initialize_api_keys_database` only on a new or disposable demo database. This transaction resets the API key database.
+    
+    4. In the Studio Test Platform, run the private `UrlMapperDemo.api_keys_store.create_api_key` transaction with the following values:
+    
+    | Field | Value |
+    | --- | --- |
+    | `keyHash` | The SHA-256 output from step 2 |
+    | `clientId` | A stable client identifier, for example `demo-client` |
+    | `scopes` | Space-separated permissions, for example `resources:read resources:write files:read files:write` |
+    | `active` | `true` |
+    | `expiresAt` | A future ISO-8601 timestamp |
+    | `createdAt` | The current ISO-8601 timestamp |
+    
+    5. Give the raw key to the API client once. It is never stored in FullSync and cannot be recovered from `keyHash`.
+    
+    ## cURL examples
+    
+    ### OpenAPI document
+    
+    ```sh
+    curl --fail --silent ''http://localhost:18080/convertigo/openapi?__project=UrlMapperDemo&JSON''
+    ```
+    
+    ### API key in the `X-API-Key` header
+    
+    ```sh
+    curl --fail --header ''X-API-Key: c8o-demo-key-change-me'' ''http://localhost:18080/convertigo/api/v1/resources?toto=test''
+    ```
+    
+    ### API key in the query string
+    
+    ```sh
+    curl --fail ''http://localhost:18080/convertigo/api/v1/resources?toto=test&api_key=c8o-demo-key-change-me''
+    ```
+    
+    ### BASIC authentication
+    
+    ```sh
+    curl --fail --user ''openapi-basic-test:demo-password'' ''http://localhost:18080/convertigo/api/v1/resources?toto=test''
+    ```
+    
+    ### Bearer authentication
+    
+    > The JWT below is a real ten-year demonstration token. It is for local demonstration only; do not reuse it in production.
+    
+    ```sh
+    curl --fail --header ''Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1cmxtYXBwZXItZGVtby0xMHkiLCJzY29wZSI6InJlc291cmNlczpyZWFkIHJlc291cmNlczp3cml0ZSBmaWxlczpyZWFkIGZpbGVzOndyaXRlIiwiaWF0IjoxNzg4ODg2NjY1LCJleHAiOjIxMDQ0NjI2NjV9.rjFAzSgL11nShkjuFBeWCL_nnzQMsIJG3WJoDlVyo7k'' ''http://localhost:18080/convertigo/api/v1/resources?toto=test''
+    ```
+    
+    ### Resource path parameter
+    
+    ```sh
+    curl --fail --header ''X-API-Key: c8o-demo-key-change-me'' ''http://localhost:18080/convertigo/api/v1/resources/2''
+    ```'
+  contextTimeout: 59
+  corsOrigin: =Origin
+  httpSessionTimeout: 60
+  version: 8.4.0
+  ↓api_keys_store [connectors.FullSyncConnector]: 🗏 connectors/api_keys_store.yaml
+  ↓UrlMapperDemodb [connectors.SqlConnector]: 🗏 connectors/UrlMapperDemodb.yaml
+  ↓api_count_resources [sequences.GenericSequence]: 🗏 sequences/api_count_resources.yaml
+  ↓api_create_resource [sequences.GenericSequence]: 🗏 sequences/api_create_resource.yaml
+  ↓api_delete_resource [sequences.GenericSequence]: 🗏 sequences/api_delete_resource.yaml
+  ↓api_download_file [sequences.GenericSequence]: 🗏 sequences/api_download_file.yaml
+  ↓api_list_resources [sequences.GenericSequence]: 🗏 sequences/api_list_resources.yaml
+  ↓api_read_resource [sequences.GenericSequence]: 🗏 sequences/api_read_resource.yaml
+  ↓api_update_resource [sequences.GenericSequence]: 🗏 sequences/api_update_resource.yaml
+  ↓api_upload_file [sequences.GenericSequence]: 🗏 sequences/api_upload_file.yaml
+  ↓auth_guard [sequences.GenericSequence]: 🗏 sequences/auth_guard.yaml
+  ↓auth_login [sequences.GenericSequence]: 🗏 sequences/auth_login.yaml
+  ↓auth_logout [sequences.GenericSequence]: 🗏 sequences/auth_logout.yaml
+  ↓lib_JWT [references.ProjectSchemaReference]: 
+    comment: HS256 JWT validation reference.
+    projectName: lib_JWT
+  ↓project1 [references.ProjectSchemaReference]: 
+    projectName: mobilebuilder_tpl_8_4_0_ngx=https://github.com/convertigo/c8oprj-mobilebuilder-tpl/archive/mobilebuilder_tpl_8_4_0_ngx.zip
+  ↓ApiV1 [core.UrlMapper]: 🗏 urlMapper.yaml

@@ -1,0 +1,115 @@
+accessibility: Hidden
+comment: 'Protected count: auth_guard returns a contract that is explicitly checked before business processing. Scope: resources:read.'
+↓CheckApiKey [steps.SequenceStep-1788882023700]: 
+  comment: Calls auth_guard; its contract is checked immediately afterwards.
+  sourceSequence: UrlMapperDemo.auth_guard
+  ↓apiKey [variables.StepVariable-1788882023702]: 
+    comment: Passes the API key to the guard sequence.
+    value: 
+      - ↑ciphered: true
+      - ↑traceable: false
+      - →→: xd8e180806a1c1d83a6255212121ab827
+    visibility: 15
+  ↓token [variables.StepVariable-1788882023704]: 
+    comment: Passes the Bearer JWT to the guard sequence.
+    value: 
+      - ↑ciphered: true
+      - ↑traceable: false
+      - →→: xd8e180806a1c1d83a6255212121ab827
+    visibility: 15
+  ↓requiredScope [variables.StepVariable-1788882606304]: 
+    comment: Scope required for the count operation.
+    value: 
+      - ↑ciphered: true
+      - ↑traceable: false
+      - →→: x0b1f900ea350101aa20e49e0a553ec19
+    visibility: 15
+↓AuthGuardAuthorized [steps.SimpleSourceStep-1788882606360]: 
+  comment: Reads the authorized value returned by auth_guard.
+  sourceDefinition: 
+    - xmlizable: 
+      - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+      - com.twinsoft.convertigo.beans.common.XMLVector: 
+        - java.lang.String: 
+          - ↑value: 1788882023700
+        - java.lang.String: 
+          - ↑value: ./document/Authorized/text()
+  variableName: authGuardAuthorized
+↓AuthGuardHttpStatus [steps.SimpleSourceStep-1788882606362]: 
+  comment: Reads the HTTP status code returned by auth_guard.
+  sourceDefinition: 
+    - xmlizable: 
+      - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+      - com.twinsoft.convertigo.beans.common.XMLVector: 
+        - java.lang.String: 
+          - ↑value: 1788882023700
+        - java.lang.String: 
+          - ↑value: ./document/HttpStatus/text()
+  variableName: authGuardHttpStatus
+↓AuthGuardError [steps.SimpleSourceStep-1788882606364]: 
+  comment: Reads the non-sensitive reason returned by auth_guard.
+  sourceDefinition: 
+    - xmlizable: 
+      - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+      - com.twinsoft.convertigo.beans.common.XMLVector: 
+        - java.lang.String: 
+          - ↑value: 1788882023700
+        - java.lang.String: 
+          - ↑value: ./document/AuthError/text()
+  variableName: authGuardError
+↓IfNotAuthorized [steps.IfStep-1788882952738]: 
+  comment: Exits immediately if auth_guard does not return authorized=true.
+  condition: String(authGuardAuthorized) !== 'true'
+  ↓SetAuthFailureStatus [steps.SetResponseStatusStep-1788882952740]: 
+    comment: Applies the status calculated by auth_guard.
+    statusCode: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+        - SmartType: 
+          - ↑mode: JS
+          - →→: Number(authGuardHttpStatus || 401)
+    statusText: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+        - SmartType: 
+          - ↑mode: JS
+          - →→: 'String(authGuardHttpStatus) === ''403'' ? ''Forbidden'' : ''Unauthorized'''
+  ↓ReturnAuthFailure [steps.ReturnStep-1788882952742]: 
+    comment: Stops the sequence before any business processing.
+    expression: String(authGuardError || '')
+↓CallApi_count_resources [steps.TransactionStep-1788872183558]: 
+  sourceTransaction: UrlMapperDemo.UrlMapperDemodb.count_resources
+↓Total [steps.JsonFieldStep-1788872183560]: 
+  key: 
+    - xmlizable: 
+      - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+      - SmartType: 
+        - ↑mode: PLAIN
+        - →→: total
+  type: number
+  value: 
+    - xmlizable: 
+      - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+      - SmartType: 
+        - ↑mode: SOURCE
+        - com.twinsoft.convertigo.beans.common.XMLVector: 
+          - java.lang.String: 
+            - ↑value: 1788872183558
+          - java.lang.String: 
+            - ↑value: ./document/sql_output/row/TOTAL/text()
+↓apiKey [variables.RequestableVariable-1788882023696]: 
+  comment: API key received from X-API-Key or api_key.
+  description: API key to validate.
+  value: 
+    - ↑ciphered: true
+    - ↑traceable: false
+    - →→: xd8e180806a1c1d83a6255212121ab827
+  visibility: 15
+↓token [variables.RequestableVariable-1788882023698]: 
+  comment: Bearer JWT passed to the guard.
+  description: Bearer JWT to validate.
+  value: 
+    - ↑ciphered: true
+    - ↑traceable: false
+    - →→: xd8e180806a1c1d83a6255212121ab827
+  visibility: 15

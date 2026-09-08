@@ -1,0 +1,27 @@
+accessibility: Hidden
+comment: Validates the demonstration BASIC credential before marking the current session as authenticated.
+↓BasicCredentialsAllowed [steps.IfStep-1788885361361]: 
+  comment: Authenticates only the validated demonstration BASIC credential; replace this verifier with an identity provider in production.
+  condition: (function () { var _value = String(user || '') + ':' + String(password || ''); var _digest = Packages.java.security.MessageDigest.getInstance('SHA-256'); var _bytes = _digest.digest(new Packages.java.lang.String(_value).getBytes('UTF-8')); var _hex = new Packages.java.lang.StringBuilder(); for (var _index = 0; _index < _bytes.length; _index++) { var _byte = _bytes[_index] & 0xff; if (_byte < 16) _hex.append('0'); _hex.append(Packages.java.lang.Integer.toHexString(_byte)); } return String(_hex.toString()) === '5a932a0e2d5302f9701fccbf5ffa902e3fdc554d757c1cb466d36d92e91a8aaa'; })()
+  ↓SetAuthenticatedUser [steps.SetAuthenticatedUserStep-1788872183479]: 
+    comment: Stores the validated BASIC username as the current authenticated user.
+    userid: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+        - SmartType: 
+          - ↑mode: JS
+          - →→: user
+  ↓AuthenticatedUser [steps.GetAuthenticatedUserStep-1788872183481]: 
+    comment: Exposes the authenticated user after a successful BASIC login.
+    nodeName: AuthenticatedUser
+↓user [variables.RequestableVariable-1788872183475]: 
+  comment: BASIC username to validate.
+  description: BASIC username.
+↓password [variables.RequestableVariable-1788872183477]: 
+  comment: BASIC password to validate.
+  description: BASIC password.
+  value: 
+    - ↑ciphered: true
+    - ↑traceable: false
+    - →→: xd8e180806a1c1d83a6255212121ab827
+  visibility: 15

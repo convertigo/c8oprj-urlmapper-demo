@@ -1,0 +1,579 @@
+accessibility: Private
+comment: Unified FullSync API key or Bearer JWT guard. Returns authorized, httpStatus, and authError; the facade explicitly checks this contract.
+↓ResolveStandardApiKeyHeader [steps.SimpleStep-1788885026028]: 
+  comment: Reads the standard X-API-Key HTTP header when the URL Mapper cannot bind its hyphenated name.
+  expression: |
+    'if ((apiKey == null || String(apiKey).replace(/^\s+|\s+$/g, '''') === '''') && context != null && context.httpServletRequest != null) {
+      var _standardApiKey = context.httpServletRequest.getHeader(''X-API-Key'');
+      if (_standardApiKey != null) apiKey = String(_standardApiKey);
+    }'
+↓SelectCredential [steps.IfThenElseStep-1788882495362]: 
+  comment: Uses the API key when present; otherwise uses the Bearer JWT.
+  condition: typeof apiKey !== 'undefined' && apiKey != null && String(apiKey).length > 0
+  ↓ApiKeyPath [steps.ThenStep-1788882495364]: 
+    comment: Centralized FullSync API key validation.
+    ↓ComputeApiKeyHash [steps.SimpleStep-1788882495366]: 
+      comment: Computes the SHA-256 fingerprint without exposing the raw key.
+      expression: |
+        var _md = Packages.java.security.MessageDigest.getInstance('SHA-256');
+        var _bytes = _md.digest(new Packages.java.lang.String(String(apiKey || '')).getBytes('UTF-8'));
+        var _hex = new Packages.java.lang.StringBuilder();
+        for (var _i = 0; _i < _bytes.length; _i++) { var _v = _bytes[_i] & 0xff; if (_v < 16) _hex.append('0'); _hex.append(Packages.java.lang.Integer.toHexString(_v)); }
+        var keyHash = String(_hex.toString());
+    ↓LookupApiKey [steps.TransactionStep-1788882495368]: 
+      comment: Looks up the API key in the FullSync repository.
+      sourceTransaction: UrlMapperDemo.api_keys_store.find_api_key_by_hash
+      ↓keyHash [variables.StepVariable-1788882495370]: 
+        comment: SHA-256 fingerprint computed for the lookup.
+        value: 
+          - ↑ciphered: true
+          - ↑traceable: false
+          - →→: xd8e180806a1c1d83a6255212121ab827
+        visibility: 15
+    ↓ApiKeyActive [steps.SimpleSourceStep-1788882530728]: 
+      comment: Reads the FullSync API key status.
+      sourceDefinition: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+          - com.twinsoft.convertigo.beans.common.XMLVector: 
+            - java.lang.String: 
+              - ↑value: 1788882495368
+            - java.lang.String: 
+              - ↑value: ./document/couchdb_output/docs/*/active/text()
+      variableName: apiKeyActive
+    ↓ApiKeyExpiresAt [steps.SimpleSourceStep-1788882530731]: 
+      comment: Reads the FullSync API key expiration timestamp.
+      sourceDefinition: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+          - com.twinsoft.convertigo.beans.common.XMLVector: 
+            - java.lang.String: 
+              - ↑value: 1788882495368
+            - java.lang.String: 
+              - ↑value: ./document/couchdb_output/docs/*/expiresAt/text()
+      variableName: apiKeyExpiresAt
+    ↓ApiKeyScopes [steps.SimpleSourceStep-1788882530733]: 
+      comment: Reads the FullSync API key scopes.
+      sourceDefinition: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+          - com.twinsoft.convertigo.beans.common.XMLVector: 
+            - java.lang.String: 
+              - ↑value: 1788882495368
+            - java.lang.String: 
+              - ↑value: ./document/couchdb_output/docs/*/scopes/text()
+      variableName: apiKeyScopes
+    ↓ApiKeyFound [steps.IfExistThenElseStep-1788882530735]: 
+      comment: Distinguishes a known API key from a missing one.
+      condition: ApiKeyFound
+      sourceDefinition: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+          - com.twinsoft.convertigo.beans.common.XMLVector: 
+            - java.lang.String: 
+              - ↑value: 1788882495368
+            - java.lang.String: 
+              - ↑value: ./document/couchdb_output/docs/*
+      ↓KnownApiKey [steps.ThenStep-1788882530737]: 
+        comment: API key found in FullSync.
+        ↓ApiKeyAllowed [steps.IfThenElseStep-1788882530739]: 
+          comment: Checks status, expiration, and the requested scope.
+          condition: String(apiKeyActive) === 'true' && new Date(String(apiKeyExpiresAt || '')).getTime() > new Date().getTime() && (!String(requiredScope || '') || String(apiKeyScopes || '').split(/\s+/).indexOf(String(requiredScope)) >= 0)
+          ↓ApiKeyAccepted [steps.ThenStep-1788882530741]: 
+            comment: Valid API key.
+            ↓AuthenticateApiKey [steps.SetAuthenticatedUserStep-1788882530743]: 
+              comment: Associates the API key client with the context.
+              userid: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                  - SmartType: 
+                    - ↑mode: JS
+                    - →→: '''api-key:'' + keyHash.substring(0, 12)'
+            ↓Authorized [steps.JsonFieldStep-1788882530745]: 
+              comment: Explicit authorization check result.
+              key: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                  - SmartType: 
+                    - ↑mode: PLAIN
+                    - →→: authorized
+              type: bool
+              value: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                  - SmartType: 
+                    - ↑mode: JS
+                    - →→: true
+            ↓HttpStatus [steps.JsonFieldStep-1788882530747]: 
+              comment: HTTP status code to apply in the facade.
+              key: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                  - SmartType: 
+                    - ↑mode: PLAIN
+                    - →→: httpStatus
+              type: number
+              value: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                  - SmartType: 
+                    - ↑mode: JS
+                    - →→: 200
+            ↓AuthError [steps.JsonFieldStep-1788882530749]: 
+              comment: Authentication reason without sensitive data.
+              key: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                  - SmartType: 
+                    - ↑mode: PLAIN
+                    - →→: authError
+              value: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                  - SmartType: 
+                    - ↑mode: JS
+                    - →→: '""'
+          ↓ApiKeyForbidden [steps.ElseStep-1788882530751]: 
+            comment: Known API key that is inactive, expired, or lacks the required scope.
+            ↓Authorized [steps.JsonFieldStep-1788882530753]: 
+              comment: Explicit authorization check result.
+              key: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                  - SmartType: 
+                    - ↑mode: PLAIN
+                    - →→: authorized
+              type: bool
+              value: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                  - SmartType: 
+                    - ↑mode: JS
+                    - →→: false
+            ↓HttpStatus [steps.JsonFieldStep-1788882530755]: 
+              comment: HTTP status code to apply in the facade.
+              key: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                  - SmartType: 
+                    - ↑mode: PLAIN
+                    - →→: httpStatus
+              type: number
+              value: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                  - SmartType: 
+                    - ↑mode: JS
+                    - →→: 403
+            ↓AuthError [steps.JsonFieldStep-1788882530757]: 
+              comment: Authentication reason without sensitive data.
+              key: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                  - SmartType: 
+                    - ↑mode: PLAIN
+                    - →→: authError
+              value: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                  - SmartType: 
+                    - ↑mode: JS
+                    - →→: '"API key is inactive, expired, or lacks the required scope"'
+      ↓UnknownApiKey [steps.ElseStep-1788882530759]: 
+        comment: Missing or unknown API key.
+        ↓Authorized [steps.JsonFieldStep-1788882530761]: 
+          comment: Explicit authorization check result.
+          key: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+              - SmartType: 
+                - ↑mode: PLAIN
+                - →→: authorized
+          type: bool
+          value: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+              - SmartType: 
+                - ↑mode: JS
+                - →→: false
+        ↓HttpStatus [steps.JsonFieldStep-1788882530763]: 
+          comment: HTTP status code to apply in the facade.
+          key: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+              - SmartType: 
+                - ↑mode: PLAIN
+                - →→: httpStatus
+          type: number
+          value: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+              - SmartType: 
+                - ↑mode: JS
+                - →→: 401
+        ↓AuthError [steps.JsonFieldStep-1788882530765]: 
+          comment: Authentication reason without sensitive data.
+          key: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+              - SmartType: 
+                - ↑mode: PLAIN
+                - →→: authError
+          value: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+              - SmartType: 
+                - ↑mode: JS
+                - →→: '"API key invalid"'
+  ↓BearerPath [steps.ElseStep-1788882495372]: 
+    comment: Centralized Bearer JWT validation.
+    ↓BasicAuthorization [steps.IfStep-1788885049790]: 
+      comment: Authenticates a validated HTTP BASIC credential as an alternative to API key or Bearer.
+      condition: /^\s*Basic\s+/i.test(String(token || ''))
+      ↓DecodeBasicCredentials [steps.SimpleStep-1788885049792]: 
+        comment: Decodes BASIC credentials and computes the non-reversible demo credential fingerprint.
+        expression: |
+          'var basicUser = '''';
+          var basicPassword = '''';
+          var basicCredentialFingerprint = '''';
+          try {
+            var _basicEncoded = String(token || '''').replace(/^\s*Basic\s+/i, '''');
+            var _basicDecoded = new Packages.java.lang.String(Packages.java.util.Base64.getDecoder().decode(_basicEncoded), ''UTF-8'');
+            var _basicSeparator = _basicDecoded.indexOf('':'');
+            if (_basicSeparator > 0) {
+              basicUser = String(_basicDecoded.substring(0, _basicSeparator));
+              basicPassword = String(_basicDecoded.substring(_basicSeparator + 1));
+              var _basicDigest = Packages.java.security.MessageDigest.getInstance(''SHA-256'');
+              var _basicBytes = _basicDigest.digest(new Packages.java.lang.String(basicUser + '':'' + basicPassword).getBytes(''UTF-8''));
+              var _basicHex = new Packages.java.lang.StringBuilder();
+              for (var _basicIndex = 0; _basicIndex < _basicBytes.length; _basicIndex++) { var _basicValue = _basicBytes[_basicIndex] & 0xff; if (_basicValue < 16) _basicHex.append(''0''); _basicHex.append(Packages.java.lang.Integer.toHexString(_basicValue)); }
+              basicCredentialFingerprint = String(_basicHex.toString());
+            }
+          } catch (_basicDecodeError) {}'
+      ↓BasicCredentialsPresent [steps.IfThenElseStep-1788885049794]: 
+        comment: Rejects malformed, empty, or invalid BASIC credentials before calling the login sequence.
+        condition: String(basicUser || '').length > 0 && String(basicPassword || '').length > 0 && String(basicCredentialFingerprint || '') === '5a932a0e2d5302f9701fccbf5ffa902e3fdc554d757c1cb466d36d92e91a8aaa'
+        ↓BasicAccepted [steps.ThenStep-1788885049796]: 
+          comment: Validated BASIC credentials for the demonstration login sequence.
+          ↓AuthenticateBasic [steps.SequenceStep-1788885049798]: 
+            comment: Delegates BASIC authentication to the existing auth_login sequence.
+            sourceSequence: UrlMapperDemo.auth_login
+            ↓user [variables.StepVariable-1788885049800]: 
+              comment: Decoded BASIC username.
+              description: BASIC username.
+              value: 
+                - ↑ciphered: true
+                - ↑traceable: false
+                - →→: xd8e180806a1c1d83a6255212121ab827
+              visibility: 15
+            ↓password [variables.StepVariable-1788885049802]: 
+              comment: Decoded BASIC password.
+              description: BASIC password.
+              value: 
+                - ↑ciphered: true
+                - ↑traceable: false
+                - →→: xd8e180806a1c1d83a6255212121ab827
+              visibility: 15
+          ↓AuthenticateBasicUser [steps.SetAuthenticatedUserStep-1788885049804]: 
+            comment: Associates the BASIC username with the current context.
+            userid: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                - SmartType: 
+                  - ↑mode: JS
+                  - →→: String(basicUser)
+          ↓Authorized [steps.JsonFieldStep-1788885049806]: 
+            comment: Explicit authorization check result.
+            key: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                - SmartType: 
+                  - ↑mode: PLAIN
+                  - →→: authorized
+            type: bool
+            value: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                - SmartType: 
+                  - ↑mode: JS
+                  - →→: true
+          ↓HttpStatus [steps.JsonFieldStep-1788885049808]: 
+            comment: HTTP status code to apply in the facade.
+            key: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                - SmartType: 
+                  - ↑mode: PLAIN
+                  - →→: httpStatus
+            type: number
+            value: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                - SmartType: 
+                  - ↑mode: JS
+                  - →→: 200
+          ↓AuthError [steps.JsonFieldStep-1788885049810]: 
+            comment: Authentication reason without sensitive data.
+            key: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                - SmartType: 
+                  - ↑mode: PLAIN
+                  - →→: authError
+            value: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                - SmartType: 
+                  - ↑mode: JS
+                  - →→: '""'
+          ↓StopAfterBasic [steps.ReturnStep-1788885049812]: 
+            comment: Stops JWT processing after BASIC authentication.
+        ↓BasicRejected [steps.ElseStep-1788885049814]: 
+          comment: Malformed BASIC credentials.
+          ↓Authorized [steps.JsonFieldStep-1788885049816]: 
+            comment: Explicit authorization check result.
+            key: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                - SmartType: 
+                  - ↑mode: PLAIN
+                  - →→: authorized
+            type: bool
+            value: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                - SmartType: 
+                  - ↑mode: JS
+                  - →→: false
+          ↓HttpStatus [steps.JsonFieldStep-1788885049818]: 
+            comment: HTTP status code to apply in the facade.
+            key: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                - SmartType: 
+                  - ↑mode: PLAIN
+                  - →→: httpStatus
+            type: number
+            value: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                - SmartType: 
+                  - ↑mode: JS
+                  - →→: 401
+          ↓AuthError [steps.JsonFieldStep-1788885049820]: 
+            comment: Authentication reason without sensitive data.
+            key: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                - SmartType: 
+                  - ↑mode: PLAIN
+                  - →→: authError
+            value: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+                - SmartType: 
+                  - ↑mode: JS
+                  - →→: '"BASIC credentials invalid"'
+          ↓StopAfterInvalidBasic [steps.ReturnStep-1788885049822]: 
+            comment: Stops JWT processing after a BASIC authentication failure.
+    ↓NormalizeBearer [steps.SimpleStep-1788882495374]: 
+      comment: Normalizes a Bearer token in the current sequence scope before validation.
+      expression: token = String(token || '').replace(/^\s*Bearer\s+/i, '');
+    ↓NormalizedToken [steps.JsonFieldStep-1788884213835]: 
+      comment: Extracts the compact JWT from the Authorization Bearer header.
+      key: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+          - SmartType: 
+            - ↑mode: PLAIN
+            - →→: NormalizedToken
+      output: false
+      value: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+          - SmartType: 
+            - ↑mode: JS
+            - →→: String(token || '').replace(/^\s*Bearer\s+/i, '')
+    ↓VerifyJwt [steps.SequenceStep-1788882495376]: 
+      comment: Verifies the HS256 signature and time-based claims.
+      sourceSequence: lib_JWT.jwt_verify
+      ↓token [variables.StepVariable-1788882495378]: 
+        comment: Compact JWT extracted from the Authorization header.
+        sourceDefinition: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+            - com.twinsoft.convertigo.beans.common.XMLVector: 
+              - java.lang.String: 
+                - ↑value: 1788884213835
+              - java.lang.String: 
+                - ↑value: ./NormalizedToken/text()
+        value: 
+          - ↑ciphered: true
+          - ↑traceable: false
+          - →→: xd8e180806a1c1d83a6255212121ab827
+        visibility: 15
+      ↓secret [variables.StepVariable-1788882495380]: 
+        comment: HS256 secret resolved from the global UrlMapperDemo.JWT.sign.secret symbol.
+        value: 
+          - ↑ciphered: true
+          - ↑traceable: false
+          - →→: xfe678480b8790c00ecea1256f8c49956ca62eb6e2b6cb724ef2c2bfe48010afb4b8b977cefe40366ab708735db572783
+        visibility: 15
+    ↓JwtValid [steps.SimpleSourceStep-1788882530810]: 
+      comment: Reads the boolean result from lib_JWT.
+      sourceDefinition: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+          - com.twinsoft.convertigo.beans.common.XMLVector: 
+            - java.lang.String: 
+              - ↑value: 1788882495376
+            - java.lang.String: 
+              - ↑value: ./document/result/valid/text()
+      variableName: jwtValid
+    ↓JwtSubject [steps.SimpleSourceStep-1788882530812]: 
+      comment: Reads the validated JWT subject.
+      sourceDefinition: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+          - com.twinsoft.convertigo.beans.common.XMLVector: 
+            - java.lang.String: 
+              - ↑value: 1788882495376
+            - java.lang.String: 
+              - ↑value: ./document/result/payload/sub/text()
+      variableName: jwtSubject
+    ↓JwtValidationError [steps.SimpleSourceStep-1788884282470]: 
+      comment: Reads the non-sensitive JWT validation error for the guard response.
+      sourceDefinition: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+          - com.twinsoft.convertigo.beans.common.XMLVector: 
+            - java.lang.String: 
+              - ↑value: 1788882495376
+            - java.lang.String: 
+              - ↑value: ./document/result/error/text()
+      variableName: jwtValidationError
+    ↓JwtAllowed [steps.IfThenElseStep-1788882530814]: 
+      comment: Accepts only a valid, unexpired JWT.
+      condition: String(jwtValid) === 'true'
+      ↓JwtAccepted [steps.ThenStep-1788882530816]: 
+        comment: Valid JWT.
+        ↓AuthenticateJwtSubject [steps.SetAuthenticatedUserStep-1788882530818]: 
+          comment: Associates the JWT subject with the context.
+          userid: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+              - SmartType: 
+                - ↑mode: JS
+                - →→: String(jwtSubject || 'jwt')
+        ↓Authorized [steps.JsonFieldStep-1788882530820]: 
+          comment: Explicit authorization check result.
+          key: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+              - SmartType: 
+                - ↑mode: PLAIN
+                - →→: authorized
+          type: bool
+          value: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+              - SmartType: 
+                - ↑mode: JS
+                - →→: true
+        ↓HttpStatus [steps.JsonFieldStep-1788882530822]: 
+          comment: HTTP status code to apply in the facade.
+          key: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+              - SmartType: 
+                - ↑mode: PLAIN
+                - →→: httpStatus
+          type: number
+          value: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+              - SmartType: 
+                - ↑mode: JS
+                - →→: 200
+        ↓AuthError [steps.JsonFieldStep-1788882530824]: 
+          comment: Authentication reason without sensitive data.
+          key: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+              - SmartType: 
+                - ↑mode: PLAIN
+                - →→: authError
+          value: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+              - SmartType: 
+                - ↑mode: JS
+                - →→: '""'
+      ↓JwtRejected [steps.ElseStep-1788882530826]: 
+        comment: Missing, invalid, or expired JWT.
+        ↓Authorized [steps.JsonFieldStep-1788882530828]: 
+          comment: Explicit authorization check result.
+          key: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+              - SmartType: 
+                - ↑mode: PLAIN
+                - →→: authorized
+          type: bool
+          value: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+              - SmartType: 
+                - ↑mode: JS
+                - →→: false
+        ↓HttpStatus [steps.JsonFieldStep-1788882530830]: 
+          comment: HTTP status code to apply in the facade.
+          key: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+              - SmartType: 
+                - ↑mode: PLAIN
+                - →→: httpStatus
+          type: number
+          value: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+              - SmartType: 
+                - ↑mode: JS
+                - →→: 401
+        ↓AuthError [steps.JsonFieldStep-1788882530832]: 
+          comment: Authentication reason without sensitive data.
+          key: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+              - SmartType: 
+                - ↑mode: PLAIN
+                - →→: authError
+          value: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+              - SmartType: 
+                - ↑mode: JS
+                - →→: String(jwtValidationError || 'Bearer token invalid or expired')
+↓apiKey [variables.RequestableVariable-1788880885816]: 
+  comment: Optional API key.
+  value: 
+    - ↑ciphered: true
+    - ↑traceable: false
+    - →→: xd8e180806a1c1d83a6255212121ab827
+  visibility: 15
+↓token [variables.RequestableVariable-1788880885886]: 
+  comment: Optional Bearer JWT.
+  value: 
+    - ↑ciphered: true
+    - ↑traceable: false
+    - →→: xd8e180806a1c1d83a6255212121ab827
+  visibility: 15
+↓requiredScope [variables.RequestableVariable-1788882495360]: 
+  comment: API scope required by the calling operation.
+  description: Required scope.
+  value: 
+    - ↑ciphered: true
+    - ↑traceable: false
+    - →→: xd8e180806a1c1d83a6255212121ab827
+  visibility: 15

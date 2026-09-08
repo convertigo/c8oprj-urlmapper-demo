@@ -1,0 +1,53 @@
+comment: 'Internal API key repository: fingerprints, scopes, status, expiration, and audit information. Never store a raw key here.'
+databaseName: api_keys_store
+secureDatabase: true
+↓create_api_key [transactions.couchdb.PostDocumentTransaction]: 
+  comment: 'Internal API key provisioning: stores keyHash only, never the raw key.'
+  fullSyncAclPolicy: anonymous
+  policy: create
+  ↓keyHash [variables.RequestableVariable-1788874861439]: 
+    comment: SHA-256 fingerprint; never the raw key.
+    description: SHA-256 fingerprint; never the raw key.
+    required: true
+  ↓clientId [variables.RequestableVariable-1788874861678]: 
+    comment: Owning client identifier.
+    description: Owning client identifier.
+    required: true
+  ↓scopes [variables.RequestableVariable-1788874862092]: 
+    comment: List of authorized scopes.
+    description: List of authorized scopes.
+    required: true
+  ↓active [variables.RequestableVariable-1788874862350]: 
+    comment: API key active/inactive status.
+    description: API key active/inactive status.
+    required: true
+  ↓expiresAt [variables.RequestableVariable-1788874862613]: 
+    comment: ISO-8601 expiration timestamp.
+    description: ISO-8601 expiration timestamp.
+    required: true
+  ↓createdAt [variables.RequestableVariable-1788874862850]: 
+    comment: ISO-8601 creation timestamp.
+    description: ISO-8601 creation timestamp.
+    required: true
+↓find_api_key_by_hash [transactions.couchdb.PostFindTransaction]: 
+  comment: Internal lookup of an active API key by SHA-256 fingerprint. The raw key must never be sent to FullSync.
+  p_limit: 1
+  p_selector: '({ keyHash: keyHash })'
+  ↓keyHash [variables.RequestableVariable-1788874861020]: 
+    comment: SHA-256 fingerprint of the supplied API key.
+    description: SHA-256 fingerprint of the supplied API key.
+    required: true
+↓initialize_api_keys_database [transactions.couchdb.ResetDatabaseTransaction]: 
+  comment: Initializes the dedicated API key database. Do not run this against a production database containing keys.
+↓by_key_hash [couchdb.JsonIndex]: 
+  comment: API key lookup index by SHA-256 fingerprint and status.
+  fields: 
+    - xmlizable: 
+      - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+      - com.twinsoft.convertigo.beans.common.XMLVector: 
+        - java.lang.String: 
+          - ↑value: keyHash
+        - java.lang.String: 
+          - ↑value: active
+        - java.lang.String: 
+          - ↑value: expiresAt

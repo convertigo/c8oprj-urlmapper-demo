@@ -1,0 +1,48 @@
+comment: 'Resource collection. Example query parameter: ?toto=test.'
+path: /resources
+↓CreateResource [rest.PostOperation]: 
+  comment: Creates a resource; the Idempotency-Key is documented.
+  targetRequestable: UrlMapperDemo.api_create_resource
+  terminateSession: false
+  ↓Idempotency_Key [rest.HeaderParameter-1788872346498]: 
+    comment: 'Idempotency key: send the standard Idempotency-Key header. The Idempotency_Key mapper alias is also accepted.'
+    mappedVariableName: idempotencyKey
+    required: true
+  ↓X_API_Key [rest.HeaderParameter-1788876427507]: 
+    comment: 'API key: send the standard X-API-Key header. The X_API_Key mapper alias is also accepted; valid BASIC or Bearer authentication is an alternative.'
+    mappedVariableName: apiKey
+  ↓Authorization [rest.HeaderParameter-1788880952210]: 
+    comment: 'JWT Bearer : Authorization: Bearer <token>.'
+    mappedVariableName: token
+  ↓Conflict [rest.OperationResponse]: 
+    comment: Idempotency key reused with a different payload.
+    modelReference: Error
+    statusCode: 409
+    statusText: Idempotency key reused with a different payload.
+    xpath: //error[code='IDEMPOTENCY_CONFLICT']
+  ↓Created [rest.OperationResponse]: 
+    comment: Resource created or response replayed for the same idempotency key.
+    modelReference: Resource
+    statusCode: 201
+    statusText: Resource created or response replayed for the same idempotency key.
+↓ListResources [rest.GetOperation]: 
+  comment: Resource list; the toto demonstration filter is available.
+  targetRequestable: UrlMapperDemo.api_list_resources
+  terminateSession: false
+  ↓toto [rest.QueryParameter-1788872322330]: 
+    comment: Demonstration filter, for example ?toto=test.
+    mappedVariableName: toto
+    value: test
+  ↓X_API_Key [rest.HeaderParameter-1788872346047]: 
+    comment: 'API key: send the standard X-API-Key header. The X_API_Key mapper alias is also accepted; valid BASIC or Bearer authentication is an alternative.'
+    mappedVariableName: apiKey
+  ↓api_key [rest.QueryParameter-1788872346267]: 
+    comment: 'API key in the URL: ?api_key=... (not recommended outside demonstrations).'
+    mappedVariableName: apiKey
+  ↓Authorization [rest.HeaderParameter-1788880951938]: 
+    comment: 'JWT Bearer : Authorization: Bearer <token>.'
+    mappedVariableName: token
+  ↓Ok [rest.OperationResponse]: 
+    comment: Resource list.
+    modelReference: Resource
+    statusText: Resource list.

@@ -1,0 +1,201 @@
+accessibility: Hidden
+comment: 'Protected list: auth_guard returns a contract that is explicitly checked before business processing. Scope: resources:read.'
+↓CheckApiKey [steps.SequenceStep-1788875391856]: 
+  comment: Calls auth_guard; its contract is checked immediately afterwards.
+  sourceSequence: UrlMapperDemo.auth_guard
+  ↓apiKey [variables.StepVariable-1788875402764]: 
+    comment: Passes the API key to the guard sequence.
+    value: 
+      - ↑ciphered: true
+      - ↑traceable: false
+      - →→: xd8e180806a1c1d83a6255212121ab827
+    visibility: 15
+  ↓token [variables.StepVariable-1788880942599]: 
+    comment: Passes the Bearer JWT to auth_guard.
+    value: 
+      - ↑ciphered: true
+      - ↑traceable: false
+      - →→: xd8e180806a1c1d83a6255212121ab827
+    visibility: 15
+  ↓requiredScope [variables.StepVariable-1788882666055]: 
+    comment: Scope required for this operation.
+    value: 
+      - ↑ciphered: true
+      - ↑traceable: false
+      - →→: x0b1f900ea350101aa20e49e0a553ec19
+    visibility: 15
+↓AuthGuardAuthorized [steps.SimpleSourceStep-1788882666116]: 
+  comment: Reads the authorized value returned by auth_guard.
+  sourceDefinition: 
+    - xmlizable: 
+      - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+      - com.twinsoft.convertigo.beans.common.XMLVector: 
+        - java.lang.String: 
+          - ↑value: 1788875391856
+        - java.lang.String: 
+          - ↑value: ./document/Authorized/text()
+  variableName: authGuardAuthorized
+↓AuthGuardHttpStatus [steps.SimpleSourceStep-1788882666118]: 
+  comment: Reads the HTTP status code returned by auth_guard.
+  sourceDefinition: 
+    - xmlizable: 
+      - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+      - com.twinsoft.convertigo.beans.common.XMLVector: 
+        - java.lang.String: 
+          - ↑value: 1788875391856
+        - java.lang.String: 
+          - ↑value: ./document/HttpStatus/text()
+  variableName: authGuardHttpStatus
+↓AuthGuardError [steps.SimpleSourceStep-1788882666120]: 
+  comment: Reads the non-sensitive reason returned by auth_guard.
+  sourceDefinition: 
+    - xmlizable: 
+      - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+      - com.twinsoft.convertigo.beans.common.XMLVector: 
+        - java.lang.String: 
+          - ↑value: 1788875391856
+        - java.lang.String: 
+          - ↑value: ./document/AuthError/text()
+  variableName: authGuardError
+↓IfNotAuthorized [steps.IfStep-1788882952840]: 
+  comment: Exits immediately if auth_guard does not return authorized=true.
+  condition: String(authGuardAuthorized) !== 'true'
+  ↓SetAuthFailureStatus [steps.SetResponseStatusStep-1788882952842]: 
+    comment: Applies the status calculated by auth_guard.
+    statusCode: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+        - SmartType: 
+          - ↑mode: JS
+          - →→: Number(authGuardHttpStatus || 401)
+    statusText: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+        - SmartType: 
+          - ↑mode: JS
+          - →→: 'String(authGuardHttpStatus) === ''403'' ? ''Forbidden'' : ''Unauthorized'''
+  ↓ReturnAuthFailure [steps.ReturnStep-1788882952844]: 
+    comment: Stops the sequence before any business processing.
+    expression: String(authGuardError || '')
+↓CallApi_list_resources [steps.TransactionStep-1788872183541]: 
+  sourceTransaction: UrlMapperDemo.UrlMapperDemodb.list_resources
+↓Rows [steps.JsonArrayStep-1788872183543]: 
+  key: 
+    - xmlizable: 
+      - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+      - SmartType: 
+        - ↑mode: PLAIN
+        - →→: rows
+  ↓RowsIterator [steps.IteratorStep-1788872183545]: 
+    sourceDefinition: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+        - com.twinsoft.convertigo.beans.common.XMLVector: 
+          - java.lang.String: 
+            - ↑value: 1788872183541
+          - java.lang.String: 
+            - ↑value: ./document/sql_output/row
+    ↓Item [steps.JsonObjectStep-1788872183547]: 
+      key: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+          - SmartType: 
+            - ↑mode: PLAIN
+            - →→: Item
+      ↓id [steps.JsonFieldStep-1788872183549]: 
+        key: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+            - SmartType: 
+              - ↑mode: PLAIN
+              - →→: id
+        type: number
+        value: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+            - SmartType: 
+              - ↑mode: SOURCE
+              - com.twinsoft.convertigo.beans.common.XMLVector: 
+                - java.lang.String: 
+                  - ↑value: 1788872183545
+                - java.lang.String: 
+                  - ↑value: ./ID/text()
+      ↓name [steps.JsonFieldStep-1788872183551]: 
+        key: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+            - SmartType: 
+              - ↑mode: PLAIN
+              - →→: name
+        value: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+            - SmartType: 
+              - ↑mode: SOURCE
+              - com.twinsoft.convertigo.beans.common.XMLVector: 
+                - java.lang.String: 
+                  - ↑value: 1788872183545
+                - java.lang.String: 
+                  - ↑value: ./NAME/text()
+      ↓description [steps.JsonFieldStep-1788872183553]: 
+        key: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+            - SmartType: 
+              - ↑mode: PLAIN
+              - →→: description
+        value: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+            - SmartType: 
+              - ↑mode: SOURCE
+              - com.twinsoft.convertigo.beans.common.XMLVector: 
+                - java.lang.String: 
+                  - ↑value: 1788872183545
+                - java.lang.String: 
+                  - ↑value: ./DESCRIPTION/text()
+      ↓version [steps.JsonFieldStep-1788872183555]: 
+        key: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+            - SmartType: 
+              - ↑mode: PLAIN
+              - →→: version
+        type: number
+        value: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+            - SmartType: 
+              - ↑mode: SOURCE
+              - com.twinsoft.convertigo.beans.common.XMLVector: 
+                - java.lang.String: 
+                  - ↑value: 1788872183545
+                - java.lang.String: 
+                  - ↑value: ./VERSION/text()
+↓toto [variables.RequestableVariable-1788872309072]: 
+  comment: Demonstration filter received through ?toto=test.
+  description: Demonstration filter received through ?toto=test.
+↓authHeader [variables.RequestableVariable-1788872333185]: 
+  comment: Bearer JWT passed through Authorization. It must be validated by a guard sequence.
+  description: Bearer JWT passed through Authorization. It must be validated by a guard sequence.
+↓apiKeyHeader [variables.RequestableVariable-1788872333449]: 
+  comment: API key passed through X-API-Key. It must be checked by the guard sequence.
+  description: API key passed through X-API-Key. It must be checked by the guard sequence.
+↓apiKeyUrl [variables.RequestableVariable-1788872333752]: 
+  comment: API key passed through api_key. Not recommended outside demonstrations.
+  description: API key passed through api_key. Not recommended outside demonstrations.
+↓apiKey [variables.RequestableVariable-1788875391755]: 
+  comment: API key received from X-API-Key or api_key.
+  description: API key to validate.
+  value: 
+    - ↑ciphered: true
+    - ↑traceable: false
+    - →→: xd8e180806a1c1d83a6255212121ab827
+  visibility: 15
+↓token [variables.RequestableVariable-1788880934409]: 
+  comment: Bearer JWT passed to auth_guard.
+  value: 
+    - ↑ciphered: true
+    - ↑traceable: false
+    - →→: xd8e180806a1c1d83a6255212121ab827
+  visibility: 15

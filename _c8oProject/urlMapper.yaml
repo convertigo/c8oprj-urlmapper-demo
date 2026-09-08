@@ -1,0 +1,9 @@
+comment: 'REST API demonstration: Swagger/OpenAPI, CRUD, file handling, idempotency, and security.'
+models: '{"Resource":{"type":"object","required":["id","name","version"],"properties":{"id":{"type":"integer","example":2},"name":{"type":"string","example":"Sample file"},"description":{"type":"string","example":"Retrievable document"},"version":{"type":"integer","example":1}}},"Error":{"type":"object","required":["code","message","correlationId"],"properties":{"code":{"type":"string","example":"RESOURCE_NOT_FOUND"},"message":{"type":"string","example":"Resource 404 was not found."},"correlationId":{"type":"string","example":"b854b2d5-7e1a-4e74-b1dc-f415bc8a7d69"}}},"FileMetadata":{"type":"object","properties":{"id":{"type":"integer","example":2},"filename":{"type":"string","example":"sample.pdf"},"contentType":{"type":"string","example":"application/pdf"},"size":{"type":"integer","example":24576}}},"IdempotencyReceipt":{"type":"object","properties":{"key":{"type":"string","example":"d2fa1d7a-313a-48b1-8a53-7b32e145f01d"},"status":{"type":"string","example":"created"},"resourceId":{"type":"integer","example":3}}}}'
+prefix: /v1
+↓BasicAuth [rest.BasicAuthentication]: 
+  authRequestable: UrlMapperDemo.auth_login
+  comment: Declares BASIC authentication in the generated OpenAPI definition; the guard validates it for every REST operation.
+↓Resources [rest.PathMapping]: 🗏 urlMapper/Resources.yaml
+↓ResourceById [rest.PathMapping]: 🗏 urlMapper/ResourceById.yaml
+↓ResourceFile [rest.PathMapping]: 🗏 urlMapper/ResourceFile.yaml

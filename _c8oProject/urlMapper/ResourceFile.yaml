@@ -1,0 +1,44 @@
+comment: Upload and retrieval of the file associated with a resource.
+path: /resources/{id}/file
+↓DownloadFile [rest.GetOperation]: 
+  comment: Returns the binary content of the resource file.
+  outputContent: toBinary
+  targetRequestable: UrlMapperDemo.api_download_file
+  terminateSession: false
+  ↓id [rest.PathParameter-1788872356185]: 
+    comment: Integer resource identifier, for example /resources/2.
+    mappedVariableName: id
+  ↓X_API_Key [rest.HeaderParameter-1788876428817]: 
+    comment: 'API key: send the standard X-API-Key header. The X_API_Key mapper alias is also accepted; valid BASIC or Bearer authentication is an alternative.'
+    mappedVariableName: apiKey
+  ↓Authorization [rest.HeaderParameter-1788880953313]: 
+    comment: 'JWT Bearer : Authorization: Bearer <token>.'
+    mappedVariableName: token
+  ↓NotFound [rest.OperationResponse]: 
+    comment: File not found.
+    modelReference: Error
+    statusCode: 404
+    statusText: File not found.
+    xpath: //error[code='FILE_NOT_FOUND']
+↓UploadFile [rest.PostOperation]: 
+  comment: 'Multipart/form-data: adds or replaces a resource file. The Idempotency-Key header is recommended.'
+  targetRequestable: UrlMapperDemo.api_upload_file
+  terminateSession: false
+  ↓Idempotency_Key [rest.HeaderParameter-1788872346733]: 
+    comment: 'Upload idempotency key: send the standard Idempotency-Key header. The Idempotency_Key mapper alias is also accepted.'
+    mappedVariableName: idempotencyKey
+    required: true
+  ↓id [rest.PathParameter-1788872355975]: 
+    comment: Integer resource identifier, for example /resources/2.
+    mappedVariableName: id
+  ↓X_API_Key [rest.HeaderParameter-1788876428588]: 
+    comment: 'API key: send the standard X-API-Key header. The X_API_Key mapper alias is also accepted; valid BASIC or Bearer authentication is an alternative.'
+    mappedVariableName: apiKey
+  ↓Authorization [rest.HeaderParameter-1788880953095]: 
+    comment: 'JWT Bearer : Authorization: Bearer <token>.'
+    mappedVariableName: token
+  ↓Uploaded [rest.OperationResponse]: 
+    comment: File accepted.
+    modelReference: FileMetadata
+    statusCode: 201
+    statusText: File accepted.

@@ -1,0 +1,113 @@
+accessibility: Hidden
+comment: 'Protected upload: auth_guard returns a contract that is explicitly checked before business processing. Scope: files:write.'
+↓ResolveStandardIdempotencyKeyHeader [steps.SimpleStep-1788885388452]: 
+  comment: Reads the standard Idempotency-Key HTTP header when the URL Mapper cannot bind its hyphenated name.
+  expression: |
+    'if ((idempotencyKey == null || String(idempotencyKey).replace(/^\s+|\s+$/g, '''') === '''') && context != null && context.httpServletRequest != null) {
+      var _standardIdempotencyKey = context.httpServletRequest.getHeader(''Idempotency-Key'');
+      if (_standardIdempotencyKey != null) idempotencyKey = String(_standardIdempotencyKey);
+    }'
+↓CheckApiKey [steps.SequenceStep-1788876408178]: 
+  comment: Calls auth_guard; its contract is checked immediately afterwards.
+  sourceSequence: UrlMapperDemo.auth_guard
+  ↓apiKey [variables.StepVariable-1788876420051]: 
+    comment: Passes the API key to the guard.
+    value: 
+      - ↑ciphered: true
+      - ↑traceable: false
+      - →→: xd8e180806a1c1d83a6255212121ab827
+    visibility: 15
+  ↓token [variables.StepVariable-1788880943820]: 
+    comment: Passes the Bearer JWT to auth_guard.
+    value: 
+      - ↑ciphered: true
+      - ↑traceable: false
+      - →→: xd8e180806a1c1d83a6255212121ab827
+    visibility: 15
+  ↓requiredScope [variables.StepVariable-1788882666854]: 
+    comment: Scope required for this operation.
+    value: 
+      - ↑ciphered: true
+      - ↑traceable: false
+      - →→: x09e83419c02f24edd0f3afb63c3df8a3
+    visibility: 15
+↓AuthGuardAuthorized [steps.SimpleSourceStep-1788882666906]: 
+  comment: Reads the authorized value returned by auth_guard.
+  sourceDefinition: 
+    - xmlizable: 
+      - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+      - com.twinsoft.convertigo.beans.common.XMLVector: 
+        - java.lang.String: 
+          - ↑value: 1788876408178
+        - java.lang.String: 
+          - ↑value: ./document/Authorized/text()
+  variableName: authGuardAuthorized
+↓AuthGuardHttpStatus [steps.SimpleSourceStep-1788882666908]: 
+  comment: Reads the HTTP status code returned by auth_guard.
+  sourceDefinition: 
+    - xmlizable: 
+      - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+      - com.twinsoft.convertigo.beans.common.XMLVector: 
+        - java.lang.String: 
+          - ↑value: 1788876408178
+        - java.lang.String: 
+          - ↑value: ./document/HttpStatus/text()
+  variableName: authGuardHttpStatus
+↓AuthGuardError [steps.SimpleSourceStep-1788882666910]: 
+  comment: Reads the non-sensitive reason returned by auth_guard.
+  sourceDefinition: 
+    - xmlizable: 
+      - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+      - com.twinsoft.convertigo.beans.common.XMLVector: 
+        - java.lang.String: 
+          - ↑value: 1788876408178
+        - java.lang.String: 
+          - ↑value: ./document/AuthError/text()
+  variableName: authGuardError
+↓IfNotAuthorized [steps.IfStep-1788882953349]: 
+  comment: Exits immediately if auth_guard does not return authorized=true.
+  condition: String(authGuardAuthorized) !== 'true'
+  ↓SetAuthFailureStatus [steps.SetResponseStatusStep-1788882953351]: 
+    comment: Applies the status calculated by auth_guard.
+    statusCode: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+        - SmartType: 
+          - ↑mode: JS
+          - →→: Number(authGuardHttpStatus || 401)
+    statusText: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+        - SmartType: 
+          - ↑mode: JS
+          - →→: 'String(authGuardHttpStatus) === ''403'' ? ''Forbidden'' : ''Unauthorized'''
+  ↓ReturnAuthFailure [steps.ReturnStep-1788882953353]: 
+    comment: Stops the sequence before any business processing.
+    expression: String(authGuardError || '')
+↓id [variables.RequestableVariable-1788872309562]: 
+  comment: Target resource identifier.
+  description: Target resource identifier.
+  required: true
+↓file [variables.RequestableVariable-1788872309794]: 
+  comment: Uploaded file (multipart/form-data).
+  description: Uploaded file (multipart/form-data).
+  isFileUpload: true
+  required: true
+↓idempotencyKey [variables.RequestableVariable-1788872310017]: 
+  comment: Upload idempotency key.
+  description: Upload idempotency key.
+↓apiKey [variables.RequestableVariable-1788876407881]: 
+  comment: API key passed to auth_guard.
+  description: API key to validate.
+  value: 
+    - ↑ciphered: true
+    - ↑traceable: false
+    - →→: xd8e180806a1c1d83a6255212121ab827
+  visibility: 15
+↓token [variables.RequestableVariable-1788880936741]: 
+  comment: Bearer JWT passed to auth_guard.
+  value: 
+    - ↑ciphered: true
+    - ↑traceable: false
+    - →→: xd8e180806a1c1d83a6255212121ab827
+  visibility: 15

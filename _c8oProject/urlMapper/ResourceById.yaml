@@ -1,0 +1,51 @@
+comment: Resource identified by the {id} path parameter.
+path: /resources/{id}
+↓DeleteResource [rest.DeleteOperation]: 
+  comment: Deletes a resource by ID.
+  targetRequestable: UrlMapperDemo.api_delete_resource
+  terminateSession: false
+  ↓id [rest.PathParameter-1788872355753]: 
+    comment: Integer resource identifier, for example /resources/2.
+    mappedVariableName: id
+  ↓X_API_Key [rest.HeaderParameter-1788876428335]: 
+    comment: 'API key: send the standard X-API-Key header. The X_API_Key mapper alias is also accepted; valid BASIC or Bearer authentication is an alternative.'
+    mappedVariableName: apiKey
+  ↓Authorization [rest.HeaderParameter-1788880952892]: 
+    comment: 'JWT Bearer : Authorization: Bearer <token>.'
+    mappedVariableName: token
+↓ReadResource [rest.GetOperation]: 
+  comment: Reads a resource by ID.
+  targetRequestable: UrlMapperDemo.api_read_resource
+  terminateSession: false
+  ↓id [rest.PathParameter-1788872355266]: 
+    comment: Integer resource identifier, for example /resources/2.
+    mappedVariableName: id
+  ↓X_API_Key [rest.HeaderParameter-1788876427831]: 
+    comment: 'API key: send the standard X-API-Key header. The X_API_Key mapper alias is also accepted; valid BASIC or Bearer authentication is an alternative.'
+    mappedVariableName: apiKey
+  ↓Authorization [rest.HeaderParameter-1788880952450]: 
+    comment: 'JWT Bearer : Authorization: Bearer <token>.'
+    mappedVariableName: token
+  ↓NotFound [rest.OperationResponse]: 
+    comment: Resource not found.
+    modelReference: Error
+    statusCode: 404
+    statusText: Resource not found.
+    xpath: //error[code='RESOURCE_NOT_FOUND']
+  ↓Ok [rest.OperationResponse]: 
+    comment: Resource found.
+    modelReference: Resource
+    statusText: Resource found.
+↓UpdateResource [rest.PutOperation]: 
+  comment: Updates a resource by ID.
+  targetRequestable: UrlMapperDemo.api_update_resource
+  terminateSession: false
+  ↓id [rest.PathParameter-1788872355540]: 
+    comment: Integer resource identifier, for example /resources/2.
+    mappedVariableName: id
+  ↓X_API_Key [rest.HeaderParameter-1788876428075]: 
+    comment: 'API key: send the standard X-API-Key header. The X_API_Key mapper alias is also accepted; valid BASIC or Bearer authentication is an alternative.'
+    mappedVariableName: apiKey
+  ↓Authorization [rest.HeaderParameter-1788880952677]: 
+    comment: 'JWT Bearer : Authorization: Bearer <token>.'
+    mappedVariableName: token
