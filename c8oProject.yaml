@@ -112,7 +112,7 @@
   ↓auth_logout [sequences.GenericSequence]: 🗏 sequences/auth_logout.yaml
   ↓lib_JWT [references.ProjectSchemaReference]: 
     comment: HS256 JWT validation reference.
-    projectName: lib_JWT
+    projectName: lib_JWT=https://github.com/convertigo/c8oprj-lib-jwt/releases/download/1.0.0/lib_JWT.car
   ↓project1 [references.ProjectSchemaReference]: 
     projectName: mobilebuilder_tpl_8_4_0_ngx=https://github.com/convertigo/c8oprj-mobilebuilder-tpl/archive/mobilebuilder_tpl_8_4_0_ngx.zip
   ↓ApiV1 [core.UrlMapper]: 🗏 urlMapper.yaml
